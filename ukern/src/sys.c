@@ -94,6 +94,42 @@ static int sys_map(vaddr_t vaddr, sys_map_flags_t perm)
 	return ret;
 }
 
+/* TEMPORARY */
+static struct apt *self_apt = NULL;
+/* TEMPORARY */
+static int sys_aptcreat(pid_t dst, size_t sz)
+{
+	struct thread *th = current_thread();
+
+	/* CHECK FOR PID (exists), check for permission to create(?) */
+	/* Not only direct. */
+	if (sz >= PAGE_SIZE * MAXAPTSIZE)
+		return -1;
+
+	self_apt = aptcreat(th->pmap, th->pmap, atop(sz));
+	return 0;
+}
+
+/* TEMPORARY */
+static int sys_aptexport(uaddr_t va, aptaddr_t aptva)
+{
+	/* _probably_ should not kill it and just return an error,
+	 * like a nice, respectful OS */
+	procassert(__chkuaddr(trunc_page(va), PAGE_SIZE));
+	/* CHECK aptva */
+	return aptexport(self_apt, va, aptva);
+}
+
+/* TEMPORARY */
+static int sys_aptimport(aptaddr_t aptva, uaddr_t va)
+{
+	/* _probably_ should not kill it and just return an error,
+	 * like a nice, respectful OS */
+	procassert(__chkuaddr(trunc_page(va), PAGE_SIZE));
+	/* CHECK aptva */
+	return aptimport(self_apt, aptva, va);
+}
+
 static int sys_die(void)
 {
 	die();
@@ -111,6 +147,16 @@ int sys_call(int sc, unsigned long a1, unsigned long a2, unsigned long a3)
 		return sys_map(a1, a2);
 	case SYS_DIE:
 		return sys_die();
+
+		/* TEMPORARY */
+	case SYS_APTCREAT:
+		return sys_aptcreat(a1, a2);
+	case SYS_APTIMPORT:
+		return sys_aptimport(a1, a2);
+	case SYS_APTEXPORT:
+		return sys_aptexport(a1, a2);
+
+
 	default:
 		return -1;
 	}

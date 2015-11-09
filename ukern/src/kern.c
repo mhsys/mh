@@ -35,6 +35,7 @@
 #include <uk/heap.h>
 #include <uk/vmap.h>
 #include <uk/structs.h>
+#include <uk/aperture.h>
 #include <machine/uk/pmap.h>
 #include <machine/uk/cpu.h>
 #include <machine/uk/locks.h>
@@ -257,8 +258,7 @@ static void idle(void)
 	}
 }
 
-unsigned vmpopulate(vaddr_t addr, size_t sz,
-	       pmap_prot_t prot)
+unsigned vmpopulate(vaddr_t addr, size_t sz, pmap_prot_t prot)
 {
 	int i, rc, ret = 0;
 	pfn_t pfn;
@@ -266,7 +266,7 @@ unsigned vmpopulate(vaddr_t addr, size_t sz,
 	for (i = 0; i < round_page(sz) >> PAGE_SHIFT; i++) {
 		pfn = __allocuser();
 		rc = pmap_enter(NULL, addr + i * PAGE_SIZE, ptoa(pfn),
-				 prot, &pfn);
+				prot, &pfn);
 		assert(!rc && "vmpopulate pmap_enter");
 		if (pfn != PFN_INVALID) {
 			__freepage(pfn);
@@ -277,7 +277,7 @@ unsigned vmpopulate(vaddr_t addr, size_t sz,
 	return ret;
 }
 
-unsigned  vmclear(vaddr_t addr, size_t sz)
+unsigned vmclear(vaddr_t addr, size_t sz)
 {
 	unsigned ret = 0;
 	pfn_t pfn;
@@ -301,8 +301,7 @@ int vmmap(vaddr_t addr, pmap_prot_t prot)
 	pfn_t pfn;
 
 	pfn = __allocuser();
-	ret = pmap_enter(NULL, addr, ptoa(pfn),
-			prot, &pfn);
+	ret = pmap_enter(NULL, addr, ptoa(pfn), prot, &pfn);
 	pmap_commit(NULL);
 
 	if (pfn != PFN_INVALID) {
@@ -336,6 +335,17 @@ int vmchprot(vaddr_t addr, pmap_prot_t prot)
 	return ret;
 }
 
+#if 0
+void vmaptcreat(struct thread *dst, size_t sz)
+{
+	struct apt *apt;
+	struct thread *th = current_thread();
+
+	apt = aptcreat(th->pmap, dst->pmap, sz);
+	LIST_INSERT_HEAD(&th->apts, apt, list_entry);
+}
+#endif
+
 static vaddr_t elfld(void *elfimg)
 {
 	int i;
@@ -356,7 +366,7 @@ static vaddr_t elfld(void *elfimg)
 		}
 		if (ph->msize - ph->fsize > 0) {
 			vmpopulate(ph->va + ph->fsize,
-			      ph->msize - ph->fsize, PROT_USER_WRX);
+				   ph->msize - ph->fsize, PROT_USER_WRX);
 			memset((void *) (ph->va + ph->fsize), 0,
 			       ph->msize - ph->fsize);
 		}
@@ -397,7 +407,6 @@ void kern_boot(void)
 	/* We are idle thread now. */
 
 	cpu_wakeup_aps();
-
 
 	/* Create init */
 	th = thnew(__initstart);

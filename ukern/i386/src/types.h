@@ -39,6 +39,7 @@ typedef unsigned pfn_t;
 #if defined(_UKERNEL)
 
 typedef u_long uaddr_t;
+typedef u_long aptaddr_t;
 typedef unsigned long jmp_buf[6];
 
 #endif

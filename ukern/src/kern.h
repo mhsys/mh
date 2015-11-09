@@ -63,14 +63,16 @@ struct thread {
 	uaddr_t sigip;
 	uaddr_t sigsp;
 
+	 LIST_HEAD(, apt) apts;
+
 	uint16_t flags;
 	uint16_t status;
-	TAILQ_ENTRY(thread) sched_list;
+	 TAILQ_ENTRY(thread) sched_list;
 };
 
 struct cpu {
 	struct thread *idle_thread;
-	TAILQ_HEAD(, thread) resched;
+	 TAILQ_HEAD(, thread) resched;
 	uint64_t softirq;
 
 	unsigned usrpgfault;
@@ -92,6 +94,7 @@ unsigned vmclear(vaddr_t addr, size_t sz);
 int vmmap(vaddr_t, pmap_prot_t prot);
 int vmchprot(vaddr_t, pmap_prot_t prot);
 int vmunmap(vaddr_t);
+void vmaptcreat(struct thread *dst, size_t sz);
 
 void schedule(void);
 void die(void) __dead;

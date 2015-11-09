@@ -46,8 +46,9 @@
 /* XXX: Not for vmap! */
 #define vatop(x) ((vaddr_t)((x) - UKERNBASE) >> PAGE_SHIFT)
 #define ptova(x) (UKERNBASE + ((vaddr_t)(x) << PAGE_SHIFT))
+
 #endif
 
-
+#define MAXAPTSIZE 512		/* 1Gb max aperture */
 
 #endif

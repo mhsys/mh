@@ -72,7 +72,7 @@ int *d = (void *) (6 * PAGE_SIZE);
 
 int main()
 {
-	int i;
+	int rc;
 
 	siginit();
 
@@ -85,10 +85,38 @@ int main()
 	*d = 0;
 	printf("Done writing.\n");
 
-	printf("Unnmapping: %d", vmunmap(d));
-	printf("And accessing it again!\n");
-	printf("d is %d\n", *d);
+	printf("preparing do die..\n");
+	rc = vmunmap(d);
+	printf("Unnmapping: %d", rc);
 
+	rc = sys_aptcreat(-1, 100 * PAGE_SIZE);
+	printf("Creating APT TABLE: %d\n", rc);
+
+	rc = vmmap(8 * PAGE_SIZE, VM_PROT_RW);
+	printf("Mapping page %lx: %d\n", 8 * PAGE_SIZE, rc);
+
+	rc = sys_aptexport(8L * PAGE_SIZE, 50L * PAGE_SIZE);
+	printf("Exporting %lx to APT_%lx: %d\n", 8 * PAGE_SIZE,
+	       50 * PAGE_SIZE, rc);
+	rc = sys_aptimport(50L * PAGE_SIZE, 9L * PAGE_SIZE);
+	printf("Importing APT_%lx to %lx: %d\n", 50 * PAGE_SIZE,
+	       9 * PAGE_SIZE, rc);
+
+
+	{
+		int i;
+		volatile int *p, *q;
+
+		p = (int *) (8L * PAGE_SIZE);
+		q = (int *) (9L * PAGE_SIZE);
+		printf("p = %p, q = %p\n", p, q);
+		for (i = 0; i < 10; i++) {
+			p[i] = i;
+		}
+		for (i = 0; i < 10; i++) {
+			printf("([%d] %d %d) ", i, p[i], q[i]);
+		}
+	}
 	printf("Goodbye!\n");
 	sys_die();
 }

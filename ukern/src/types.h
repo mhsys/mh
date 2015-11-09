@@ -51,6 +51,8 @@ typedef unsigned long long intmax_t;
 
 #if defined _UKERNEL
 typedef uint64_t cpumask_t;
+
+typedef uint32_t pid_t;
 #endif
 
 #endif

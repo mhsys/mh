@@ -48,6 +48,11 @@ typedef enum {
 #endif
 #define SYS_MAP 0x10
 
+/* TEMPORARY */
+#define SYS_APTCREAT  0x200
+#define SYS_APTIMPORT 0x201
+#define SYS_APTEXPORT 0x202
+
 /* System-processes only */
 #define SYS_PUTC 0x1000
 

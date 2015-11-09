@@ -78,9 +78,14 @@ uintptr_t __getpdptr(void);
 
 l1e_t pmap_setl1e(struct pmap *pmap, vaddr_t va, l1e_t l1e);
 int pmap_enter(struct pmap *pmap, vaddr_t va, paddr_t pa,
-	       pmap_prot_t prot, pfn_t *pfn);
+	       pmap_prot_t prot, pfn_t * pfn);
 int pmap_chprot(struct pmap *pmap, vaddr_t va, pmap_prot_t prot);
 void pmap_commit(struct pmap *pmap);
+
+int pmap_import(struct pmap *pmap, vaddr_t va, l1e_t extl1e);
+int pmap_import_cancel(struct pmap *pmap, vaddr_t va);
+int pmap_export(struct pmap *pmap, vaddr_t va, l1e_t * l1e);
+int pmap_export_cancel(struct pmap *pmap, vaddr_t va);
 
 #define pmap_clear(_pmap, _va, _pfn) pmap_enter((_pmap), (_va), 0, 0, _pfn)
 #define pmap_current()                                          \

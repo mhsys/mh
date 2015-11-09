@@ -63,3 +63,32 @@ int sys_map(vaddr_t vaddr, sys_map_flags_t perm)
 		   (unsigned long) vaddr, (unsigned long) perm, ret);
 	return ret;
 }
+
+/* TEMPORARY */
+int sys_aptcreat(unsigned test, size_t sz)
+{
+	int ret;
+
+	__syscall2(SYS_APTCREAT,
+		   (unsigned long) test, (unsigned long) sz, ret);
+	return ret;
+}
+
+/* TEMPORARY */
+int sys_aptimport(vaddr_t aptva, vaddr_t va)
+{
+	int ret;
+
+	__syscall2(SYS_APTIMPORT,
+		   (unsigned long) aptva, (unsigned long) va, ret);
+	return ret;
+}
+
+int sys_aptexport(vaddr_t va, vaddr_t aptva)
+{
+	int ret;
+
+	__syscall2(SYS_APTEXPORT,
+		   (unsigned long) va, (unsigned long) aptva, ret);
+	return ret;
+}

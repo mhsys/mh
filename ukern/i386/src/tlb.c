@@ -88,6 +88,7 @@ void __flush_tlbs(cpumask_t cpumask, unsigned tlbf)
 
 	/* Synchronous wait */
 	while (__sync_add_and_fetch(&__tlbcnt, 0) != 0) {
+	  printf("w");
 		asm volatile ("pause; pause; pause;");
 	}
 }
