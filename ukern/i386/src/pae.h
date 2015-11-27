@@ -60,6 +60,7 @@
 #define PG_D       0x40
 #define PG_S       0x80
 #define PG_G       0x100
+#define PG_COW     0x200
 #if 0
 #define PG_NX      0x8000000000000000LL
 #else
@@ -82,5 +83,7 @@ typedef uint64_t l1e_t;
 
 #define l1epfn(_l1e) ((_l1e)>>PAGE_SHIFT)
 #define l1eflags(_l1e) ((_l1e) & 0x8000000000000fffULL)
+
+#define l1e_is_foreign(_l1e) 0
 
 #endif

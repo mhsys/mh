@@ -51,6 +51,8 @@
  */
 
 #define USERBASE  __ULONG(0x00000000)
+#define NOCOWBASE __ULONG(0x00000000)
+#define NOCOWEND  __ULONG(2 * PAGE_SIZE)
 #define USEREND   __paeoffva(2, LINOFF, 0)
 #define UKERNLIN  USEREND
 #define UKERNBASE __ULONG(0xc0000000)

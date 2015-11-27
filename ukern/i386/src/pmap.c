@@ -46,6 +46,10 @@ __regparm void __setpdptr(void *);
 
 #define DEUKERNBASE(_p) ((uintptr_t)(_p) - UKERNBASE)
 
+#define userpage_incref(_x) pfndb_incref(_x)
+#define userpage_decref(_x) pfndb_decref(_x)
+#define userpage_getref(_x) pfndb_getref(_x)
+
 #define pmap_current()						\
     ((struct pmap *)((uintptr_t)UKERNBASE + __getpdptr()	\
 		     - offsetof(struct pmap, pdptr)))
@@ -105,35 +109,64 @@ static void __setl1e(l1e_t * l1p, l1e_t l1e)
 }
 
 int
+_pmap_fault(vaddr_t va)
+{
+	int ret = -1;
+	struct pmap *pmap = pmap_current();
+	l1e_t l1e, *l1p = __val1tbl(va) + L1OFF(va);	
+
+	/* Check that is not a spurious COW fault */
+	spinlock(&pmap->lock);
+	l1e = *l1p;
+	if (((l1e & (PG_P|PG_U|PG_W|PG_COW)) == (PG_P|PG_U|PG_COW))
+	    && (userpage_getref(l1epfn(l1e)) == 1)) {
+		printf("Fixing last COW!\n");
+		/* Last COW mapping. */
+		l1e &= ~PG_COW;
+		l1e |= PG_W;
+		__setl1e(l1p, l1e);
+		/* No TLB flush. We only increased permissions */
+		ret = 0;
+	}
+	spinunlock(&pmap->lock);
+	return ret;
+}
+
+int
 pmap_enter(struct pmap * pmap, vaddr_t va, paddr_t pa, pmap_prot_t prot, pfn_t *pfn)
 {
-	int ret = 0;
+	pfn_t opfn;
 	l1e_t ol1e, nl1e, *l1p;
 
 	if (pmap == NULL)
 		pmap = pmap_current();
 
+	nl1e = mkl1e(pa, prot);
+	if ((prot & (PG_U|PG_P)) == (PG_U|PG_P))
+		userpage_incref(l1epfn(nl1e));
+	
+	spinlock(&pmap->lock);
 	if (pmap == pmap_current())
 		l1p = __val1tbl(va) + L1OFF(va);
 	else
-		panic("set to different pmap voluntarily not supported.");
+		l1p = pmap->l1s + L2OFF(va) + L1OFF(va);
 
-	nl1e = mkl1e(pa, prot);
-	spinlock(&pmap->lock);
 	ol1e = *l1p;
 	pmap->tlbflush = __tlbflushp(ol1e, nl1e);
 
 	__setl1e(l1p, nl1e);
 	spinunlock(&pmap->lock);
 
-	if (pfn != NULL) {
-		if (ol1e & PG_P)
-			*pfn = atop(ol1e);
-		else
-			*pfn = PFN_INVALID;
-	}
-	return ret;
-}
+	if (((ol1e & (PG_U|PG_P)) == (PG_U|PG_P))
+	    && !userpage_decref(l1epfn(ol1e)))
+		opfn = l1epfn(ol1e);
+	else
+		opfn = PFN_INVALID;
+
+	if (pfn != NULL)
+		*pfn = opfn;
+	return 0;
+}	
 
 int pmap_chprot(struct pmap *pmap, vaddr_t va, pmap_prot_t prot)
 {
@@ -156,6 +189,11 @@ int pmap_chprot(struct pmap *pmap, vaddr_t va, pmap_prot_t prot)
 		spinunlock(&pmap->lock);
 		return -1;
 	}
+	if ((l1eflags(ol1e) & PG_COW) && (prot & PG_W)) {
+		/* Can't make COW writable with chprot */
+		spinunlock(&pmap->lock);
+		return -1;
+	}
 	nl1e = mkl1e(ptoa(l1epfn(ol1e)), prot);
 	pmap->tlbflush = __tlbflushp(ol1e, nl1e);
 	__setl1e(l1p, nl1e);
@@ -163,6 +201,51 @@ int pmap_chprot(struct pmap *pmap, vaddr_t va, pmap_prot_t prot)
 	spinunlock(&pmap->lock);
 
 	return 0;
+}
+
+struct pmap *pmap_copy(struct pmap *pmap)
+{
+	struct pmap *new = pmap_alloc();
+	l1e_t *orig, *copy, l1e;
+	vaddr_t va;
+
+	if (pmap == NULL)
+		pmap = pmap_current();
+
+	if (pmap != pmap_current())
+		panic("copy from a different pmap voluntarily not supported.");
+
+	spinlock(&pmap->lock);
+	for (va = NOCOWBASE; va < NOCOWEND; va += PAGE_SIZE) {
+		/* NO COW area. Leave blank */
+		copy = new->l1s + NPTES * L2OFF(va) + L1OFF(va);	  
+		__setl1e(copy, 0);		
+	}
+	for (va = NOCOWEND; va < USEREND; va += PAGE_SIZE) {
+		orig = __val1tbl(va) + L1OFF(va);
+		copy = new->l1s + NPTES * L2OFF(va) + L1OFF(va);
+		l1e = *orig;
+
+		if (!(l1e & PG_P)) {
+			/* Not present, copy */
+			__setl1e(copy, l1e);
+		} else if (l1e_is_foreign(l1e)) {
+			/* Foreign. Leave blank */
+			__setl1e(copy, 0);
+		} else {
+			/* COW, even for readonly pages */
+			assert(l1e & PG_U);
+			userpage_incref(l1epfn(l1e));			
+			l1e &= ~PG_W;
+			l1e |= PG_COW;
+			__setl1e(orig, l1e);
+			__setl1e(copy, l1e);
+			pmap->tlbflush |= TLBF_NORMAL;
+		}
+	}
+	/* TLB of copy not affected. We just created it */
+	spinunlock(&pmap->lock);
+	return new;
 }
 
 void pmap_commit(struct pmap *pmap)

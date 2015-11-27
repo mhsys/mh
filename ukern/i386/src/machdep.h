@@ -43,6 +43,7 @@ void usrframe_enter(struct usrframe *f);
 void usrframe_setup(struct usrframe *f, vaddr_t ip, vaddr_t sp);
 void usrframe_signal(struct usrframe *f, vaddr_t ip, vaddr_t sp, uint32_t fl,
 		     unsigned xcpt, vaddr_t info);
+void usrframe_setret(struct usrframe *f, unsigned long r);
 uint32_t usrframe_iret(struct usrframe *f);
 
 extern int __crash_requested;

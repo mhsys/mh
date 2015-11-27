@@ -3,7 +3,11 @@ OUTPUT_ARCH(i386)
 ENTRY(_start)
 SECTIONS
 {
-   .text 0x200000 :
+   .zcow 0x200000 : /* No COW: sigstack */
+   {
+      *(.zcow)
+   }
+   .text 0x400000 : /* Start at End of NOCOW */
    {
       _scode = .;
       *(.text)

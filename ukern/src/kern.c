@@ -109,6 +109,67 @@ static struct thread *thnew(void (*__start) (void))
 	return th;
 }
 
+static void __childstart(void)
+{
+	struct thread *th = current_thread();
+
+	printf("child!\n");
+	/* Child returns zero */
+	usrframe_setret(th->frame, 0);
+	__insn_barrier();
+	printf("Starting at eip %p\n", ((struct usrframe *)th->frame)->eip);
+	usrframe_enter(th->frame);
+	/* Not reached */
+}
+
+struct thread *thfork(void)
+{
+	vaddr_t va;
+	struct thread *nth, *cth = current_thread();
+
+	nth = structs_alloc(&threads);
+	nth->pmap = pmap_copy(NULL);
+	nth->stack_4k = alloc4k();
+	nth->frame = (uint8_t *)nth->stack_4k;
+	memcpy(nth->frame, cth->frame, sizeof(struct usrframe));
+
+	nth->userfl = cth->userfl;
+	nth->softintrs = cth->softintrs;
+
+	nth->sigip = cth->sigip;
+	nth->sigsp = cth->sigsp;
+
+	/* NB: Stack is mostly at the end of the 4k page.
+	 * Frame is at the very beginning. */
+	_setupjmp(nth->ctx, __childstart, nth->stack_4k + 0xff0);
+
+	/* Copy the no cow area */
+	for (va = NOCOWBASE; va < NOCOWEND; va += PAGE_SIZE) {
+		pfn_t pfn;
+
+		/* XXX: Allocate in KERN pool to directly map and
+		 * copy, avoiding global vmapping. Fix properly by
+		 * implementing local high mem mapping, using only one
+		 * slot and a couple of INVLPG's */
+		pfn = pgalloc(1, PFNT_USER, GFP_KERN);
+		if (copy_from_user(ptova(pfn), va, PAGE_SIZE)) {
+			/* Not present */
+			pgfree(pfn, 1);
+			continue;
+		}
+		pmap_enter(nth->pmap, va, ptoa(pfn), PROT_USER_WRX, NULL);
+	}
+	/* Finished handling the pmaps. */
+	pmap_commit(NULL);
+	/* No need to flash nth->pmap, not used yet */
+
+	nth->status = THST_RUNNABLE;
+	TAILQ_INSERT_TAIL(&current_cpu()->resched, nth, sched_list);
+	cpu_softirq_raise(SOFTIRQ_RESCHED);
+
+	return nth;
+}
+
 void thintr(unsigned vect, vaddr_t info)
 {
 	struct thread *th = current_thread();

@@ -39,6 +39,7 @@ typedef struct {
 		char ptr[0];
 		struct pgzentry pz;
 		struct slab sh;
+		uint64_t ref;
 	};
 } __packed ipfn_t;
 
@@ -74,5 +75,9 @@ void pfndb_printranges(void);
 
 void *pfndb_getptr(unsigned);
 void *pfndb_setup(void *, unsigned);
+
+void pfndb_incref(unsigned);
+uint64_t pfndb_getref(unsigned);
+uint64_t pfndb_decref(unsigned);
 
 #endif

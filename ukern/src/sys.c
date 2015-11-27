@@ -56,7 +56,7 @@ static int sys_iret(void)
 {
 	struct thread *th = current_thread();
 
-	return usrframe_iret(current_thread()->frame);
+	return usrframe_iret(th->frame);
 }
 
 static int sys_sti(void)
@@ -129,6 +129,14 @@ static int sys_map(vaddr_t vaddr, sys_map_flags_t perm)
 	return ret;
 }
 
+static int sys_fork(void)
+{
+	struct thread *th;
+
+	th = thfork();
+	return !!th;
+}
+
 static int sys_die(void)
 {
 	die();
@@ -152,6 +160,8 @@ int sys_call(int sc, unsigned long a1, unsigned long a2, unsigned long a3)
 		return sys_wait();
 	case SYS_MAP:
 		return sys_map(a1, a2);
+	case SYS_FORK:
+		return sys_fork();
 	case SYS_DIE:
 		return sys_die();
 	default:

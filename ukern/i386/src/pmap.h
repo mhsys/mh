@@ -56,6 +56,7 @@ struct pmap *pmap_boot(void);
 struct pmap *pmap_alloc(void);
 void pmap_switch(struct pmap *pmap);
 void pmap_free(struct pmap *);
+int _pmap_fault(vaddr_t va);
 
 #define PROT_KERNWRX   (PROT_KERNX | PG_A | PG_D | PG_W | PG_D)
 #define PROT_KERNWR    (PROT_KERN | PG_A | PG_D | PG_W | PG_D)

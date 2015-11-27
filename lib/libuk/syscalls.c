@@ -76,6 +76,13 @@ int sys_wait(void)
 	__syscall0(SYS_WAIT, dummy);
 }
 
+int sys_fork(void)
+{
+	int ret;
+
+	__syscall0(SYS_FORK, ret);
+	return ret;
+}
 
 int sys_map(vaddr_t vaddr, sys_map_flags_t perm)
 {

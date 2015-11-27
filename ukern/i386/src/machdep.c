@@ -127,10 +127,16 @@ int xcpt_entry(uint32_t vect, struct usrframe *f)
 		cpu_nmi_broadcast();
 		spinlock(&__crash_lock);
 		printf("Crash report of CPU #%d:\n", cpu_number());
-		framedump(f);
+		//		framedump(f);
 		spinunlock(&__crash_lock);
 		asm volatile ("cli; hlt");
 		return -1;
+	}
+
+	/* Check for spurious COW fault */
+	if (!_pmap_fault(f->cr2)) {
+	        printf("Fixed!\n");
+		return 0;
 	}
 
 	if (__predict_false(f->cs != UCS)) {
@@ -263,6 +269,11 @@ void usrframe_signal(struct usrframe *f, vaddr_t ip, vaddr_t sp, uint32_t fl,
 	/* Change the user entry on success. */
 	f->esp = usp;
 	f->eip = ip;
+}
+
+void usrframe_setret(struct usrframe *f, unsigned long r)
+{
+	f->eax = 0;
 }
 
 void usrframe_setup(struct usrframe *f, vaddr_t ip, vaddr_t sp)

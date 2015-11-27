@@ -32,8 +32,10 @@
 
 extern void __inthdlr(void);
 
-static __aligned(PAGE_SIZE)
-char _sigstack[PAGE_SIZE];
+/* This will be put by the linker script in the NOCOW area. On fork
+   the memory will be copied, garanteeing signal handlers to keep
+   working to un-COW pages. */
+char _sigstack[2048] __section(".zcow") = { 0 };
 
 
 int _libuk_signals_nointr(int vect, unsigned long info,  struct intframe *f)
@@ -45,7 +47,7 @@ int _libuk_signals_nointr(int vect, unsigned long info,  struct intframe *f)
 void siginit(void)
 {
 	void *stkptr =
-	  (void *)(_sigstack + PAGE_SIZE - sizeof(struct intframe));
+	  (void *)(_sigstack + 2048);
 	sys_inthdlr(__inthdlr, stkptr);
 }
 

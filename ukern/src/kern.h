@@ -77,6 +77,7 @@ struct cpu {
 int __usrcpy(uaddr_t uaddr, void *dst, void *src, size_t sz);
 
 void thintr(unsigned xcpt, vaddr_t info);
+struct thread *thfork(void);
 void kern_boot(void);
 void kern_bootap(void);
 

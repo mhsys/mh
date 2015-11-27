@@ -124,6 +124,7 @@ void pfndb_settype(unsigned pfn, uint8_t t)
 	spinlock(&pfndblock);
 	ot = p->type;
 	p->type = t;
+	p->ref = 0;
 	spinunlock(&pfndblock);
 
 	pfndb_stats_dectype(ot);
@@ -141,6 +142,38 @@ uint8_t pfndb_type(unsigned pfn)
 	t = p->type;
 	spinunlock(&pfndblock);
 	return t;
+}
+
+void pfndb_clrref(unsigned pfn)
+{
+	ipfn_t *p = &pfndb[pfn];
+
+	assert(pfn <= pfndb_max);
+	p->ref = 0; /* Unlocked */
+}
+
+void pfndb_incref(unsigned pfn)
+{
+	ipfn_t *p = &pfndb[pfn];
+
+	assert(pfn <= pfndb_max);
+	__sync_add_and_fetch(&p->ref, 1);
+}
+
+uint64_t pfndb_getref(unsigned pfn)
+{
+	ipfn_t *p = &pfndb[pfn];
+
+	assert(pfn <= pfndb_max);
+	return __sync_add_and_fetch(&p->ref, 0);
+}
+
+uint64_t pfndb_decref(unsigned pfn)
+{
+	ipfn_t *p = &pfndb[pfn];
+
+	assert(pfn <= pfndb_max);
+	return __sync_add_and_fetch(&p->ref, -1);
 }
 
 void *pfndb_getptr(unsigned pfn)

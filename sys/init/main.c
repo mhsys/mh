@@ -72,7 +72,7 @@ int __sys_inthandler(int vect, unsigned long info, struct intframe *f)
 	printf("\n");
 }
 
-int *d = (void *) (6 * PAGE_SIZE);
+int *d = (void *) (8 * PAGE_SIZE);
 
 int main()
 {
@@ -92,10 +92,16 @@ int main()
 	printf("Unnmapping: %d", vmunmap(d));
 	printf("And accessing it again!\n");
 	printf("d is %d\n", *d);
-	sys_sti();
 
-	while (1)
-		sys_wait();
+	if (sys_fork()) {
+	  printf("Parent!\n");
+	} else {
+	  printf("child!\n");
+	  while(1)
+	    printf("b");
+	  sys_wait();
+	}
+
 	printf("Goodbye!\n");
 	sys_die();
 }
