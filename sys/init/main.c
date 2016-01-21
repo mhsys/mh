@@ -102,6 +102,7 @@ int main()
 			       "\n", ior.port, ior.val);
 			printf("d is %x (%p)\n", *d, d);
 			sys_irq(id, 3);
+			printf("BOOTSTRAP: %d", sys_bootstrap(id, 0x70L * PAGE_SIZE, 500));
 			sys_eio(id);
 		}
 	} else {

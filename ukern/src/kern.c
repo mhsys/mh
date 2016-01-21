@@ -134,6 +134,12 @@ static struct thread *thnew(void (*__start) (void))
 	th->egid = 0;
 	th->sgid = 0;
 
+	th->bstrap_lock = 0;
+	th->bstrap_ptr = NULL;
+	th->bstrap_sz = 0;
+	th->bstrap_uid = 0;
+	th->bstrap_gid = 0;
+
 	th->usrdev = 0;
 	memset(&th->bus, 0, sizeof(th->bus));
 
@@ -176,6 +182,13 @@ struct thread *thfork(void)
 	nth->rgid = cth->rgid;
 	nth->egid = cth->egid;
 	nth->sgid = cth->sgid;
+
+	/* Bootstrap data not inherited */
+	nth->bstrap_lock = 0;
+	nth->bstrap_ptr = NULL;
+	nth->bstrap_sz = 0;
+	nth->bstrap_uid = 0;
+	nth->bstrap_gid = 0;
 
 	nth->sigip = cth->sigip;
 	nth->sigsp = cth->sigsp;
@@ -235,6 +248,16 @@ void thraise(struct thread *th, unsigned vect)
 	assert(vect < MAXSIGNALS);
 	__sync_or_and_fetch(&th->softintrs, (1LL << vect));
 	wake(th);
+}
+
+void thbootstrap(struct thread *th, uid_t uid, gid_t gid, void *ptr, size_t sz)
+{
+	spinlock(&th->bstrap_lock);
+	th->bstrap_uid = uid;
+	th->bstrap_gid = gid;
+	th->bstrap_ptr = ptr;
+	th->bstrap_sz = sz;
+	spinunlock(&th->bstrap_lock);
 }
 
 static void thfree(struct thread *th)
@@ -551,6 +574,16 @@ int devpoll(struct sys_poll_ior *polld)
 	return ret;
 }
 
+int devbootstrap(unsigned id, vaddr_t va, size_t sz)
+{
+	int ret = -ENOENT;
+	struct thread *th = current_thread();
+
+	if (th->usrdev)
+		ret = usrdev_bootstrap(th->usrdev, id, va, sz, 0);
+	return ret;
+}
+
 int deveio(unsigned id)
 {
 	int ret = -ENOENT;
@@ -740,6 +773,12 @@ void kern_boot(void)
 	th->egid = 0;
 	th->sgid = 0;
 
+	th->bstrap_lock = 0;
+	th->bstrap_ptr = NULL;
+	th->bstrap_sz = 0;
+	th->bstrap_uid = 0;
+	th->bstrap_gid = 0;
+
 	set_current_thread(th);
 	current_cpu()->idle_thread = th;
 	/* We are idle thread now. */
@@ -773,6 +812,12 @@ void kern_bootap(void)
 	th->rgid = 0;
 	th->egid = 0;
 	th->sgid = 0;
+
+	th->bstrap_lock = 0;
+	th->bstrap_ptr = NULL;
+	th->bstrap_sz = 0;
+	th->bstrap_uid = 0;
+	th->bstrap_gid = 0;
 
 	set_current_thread(th);
 	current_cpu()->idle_thread = th;

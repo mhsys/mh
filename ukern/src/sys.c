@@ -117,6 +117,11 @@ static int sys_poll(uaddr_t uior)
 	return id;
 }
 
+static int sys_bootstrap(unsigned id, vaddr_t va, size_t sz)
+{
+	return devbootstrap(id, va, sz, /* mode */0);
+}
+
 static int sys_eio(unsigned id)
 {
 	return deveio(id);
@@ -337,6 +342,8 @@ int sys_call(int sc, unsigned long a1, unsigned long a2, unsigned long a3)
 		return sys_creat(a1, a2, a3);
 	case SYS_POLL:
 		return sys_poll(a1);
+	case SYS_BOOTSTRAP:
+		return sys_bootstrap(a1, a2, a3);
 	case SYS_EIO:
 		return sys_eio(a1);
 	case SYS_IMPORT:

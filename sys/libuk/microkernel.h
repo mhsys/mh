@@ -79,6 +79,7 @@ int sys_poll(struct sys_poll_ior *ior);
 int sys_eio(unsigned id);
 int sys_irq(unsigned id, unsigned irq);
 int sys_import(unsigned id, unsigned iopfn, u_long va);
+int sys_bootstrap(unsigned id, vaddr_t va, size_t s);
 
 uid_t sys_getuid(int sel);
 gid_t sys_getgid(int sel);

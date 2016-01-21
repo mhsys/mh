@@ -172,6 +172,14 @@ int sys_poll(struct sys_poll_ior *ior)
 	return ret;
 }
 
+int sys_bootstrap(unsigned id, vaddr_t va, size_t sz)
+{
+	int ret;
+
+	__syscall3(SYS_BOOTSTRAP, (unsigned long) id, (unsigned long) va, (unsigned long) sz, ret);
+	return ret;
+}
+
 int sys_eio(unsigned id)
 {
 	int ret;

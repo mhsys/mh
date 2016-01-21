@@ -90,6 +90,7 @@ struct sys_poll_ior {
 #define SYS_EIO    0x32
 #define SYS_IRQ    0x33
 #define SYS_IMPORT 0x34
+#define SYS_BOOTSTRAP 0x35
 
 #define SYS_GETUID   0x50
 #define SYS_SETUID   0x51

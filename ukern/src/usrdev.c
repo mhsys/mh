@@ -36,10 +36,10 @@
 #include <uk/pgalloc.h>
 #include <lib/lib.h>
 
-#define MAXUSRDEVREMS 256
+#define MAXUSRDEVREMS 16
 #define MAXUSRDEVAPERTS 16
 
-static struct slab usrdevs;
+//static struct slab usrdevs;
 static struct slab usrioreqs;
 
 enum usrior_op {
@@ -59,15 +59,7 @@ struct usrioreq {
 	uid_t uid;
 	gid_t gid;
 
-	TAILQ_ENTRY(usrioreq) queue;
-};
-
-struct remth {
-	int use:1;		/* Entry in use (proc) */
-	int bsy:1;		/* Request in progress (device) */
-	unsigned id;		/* Remote ID descriptor */
-	struct thread *th;	/* Remote threads */
-	unsigned irqmap[IRQMAPSZ];	/* Interrupt Remapping Table */
+	 TAILQ_ENTRY(usrioreq) queue;
 };
 
 struct apert {
@@ -77,6 +69,15 @@ struct apert {
 	l1e_t l1e;
 };
 
+struct remth {
+	int use:1;		/* Entry in use (proc) */
+	int bsy:1;		/* Request in progress (device) */
+	unsigned id;		/* Remote ID descriptor */
+	struct thread *th;	/* Remote threads */
+	unsigned irqmap[IRQMAPSZ];	/* Interrupt Remapping Table */
+	struct apert apertbl[MAXUSRDEVAPERTS];
+};
+
 struct usrdev {
 	lock_t lock;
 	struct dev dev;		/* Registered device */
@@ -84,9 +85,8 @@ struct usrdev {
 	unsigned sig;		/* Request Signal */
 
 	struct remth remths[MAXUSRDEVREMS];
-	struct apert apertbl[MAXUSRDEVAPERTS];
 
-	TAILQ_HEAD(,usrioreq) ioreqs;
+	 TAILQ_HEAD(, usrioreq) ioreqs;
 };
 
 struct usrdev_procopq {
@@ -165,6 +165,7 @@ static int _usrdev_export(void *devopq, unsigned id, vaddr_t va,
 	/* Current thread: Process */
 	int ret;
 	l1e_t expl1e;
+	struct apert *apt;
 	struct usrdev *ud = (struct usrdev *) devopq;
 
 	assert(__isuaddr(va));
@@ -178,16 +179,17 @@ static int _usrdev_export(void *devopq, unsigned id, vaddr_t va,
 		return ret;
 
 	spinlock(&ud->lock);
-	if (ud->apertbl[iopfn].procva) {
-		ret = pmap_uexport_cancel(NULL, ud->apertbl[iopfn].procva);
+	apt = &(ud->remths[id].apertbl[iopfn]);
+	if (apt->procva) {
+		ret = pmap_uexport_cancel(NULL, apt->procva);
 		assert(!ret);
 	}
-	if (ud->apertbl[iopfn].devva) {
+	if (apt->devva) {
 		pfn_t pfn;
 
 		ret = pmap_uimport_swap(ud->th->pmap,
-					ud->apertbl[iopfn].devva,
-					ud->apertbl[iopfn].l1e,
+					apt->devva,
+					apt->l1e,
 					expl1e, &pfn);
 		assert(!ret);
 
@@ -199,9 +201,9 @@ static int _usrdev_export(void *devopq, unsigned id, vaddr_t va,
 		pmap_commit(ud->th->pmap);
 	}
 	pmap_commit(NULL);
-	ud->apertbl[iopfn].procva = va;
-	ud->apertbl[iopfn].procid = id;
-	ud->apertbl[iopfn].l1e = expl1e;
+	apt->procva = va;
+	apt->procid = id;
+	apt->l1e = expl1e;
 	spinunlock(&ud->lock);
 	return 0;
 }
@@ -226,16 +228,19 @@ static void _usrdev_close(void *devopq, unsigned id)
 {
 	int i, ret;
 	l1e_t l1e;
+	struct apert *apt;
 	vaddr_t procva, devva;
 	unsigned procid;
 	struct usrdev *ud = (struct usrdev *) devopq;
 	/* Current thread: Process or Device */
 
+	printf("CLOSE!\n");
 	spinlock(&ud->lock);
 	for (i = 0; i < MAXUSRDEVAPERTS; i++) {
-		procid = ud->apertbl[i].procid;
-		procva = ud->apertbl[i].procva;
-		devva = ud->apertbl[i].devva;
+		apt = &(ud->remths[id].apertbl[i]);
+		procid = apt->procid;
+		procva = apt->procva;
+		devva = apt->devva;
 		if (procid != id)
 			continue;
 		if (devva) {
@@ -250,9 +255,9 @@ static void _usrdev_close(void *devopq, unsigned id)
 						  procva);
 			assert(!ret);
 		}
-		ud->apertbl[i].procid = 0;
-		ud->apertbl[i].procva = 0;
-		ud->apertbl[i].l1e = 0;
+		apt->procid = 0;
+		apt->procva = 0;
+		apt->l1e = 0;
 	}
 	ud->remths[id].use = 0;
 	spinunlock(&ud->lock);
@@ -275,17 +280,16 @@ struct usrdev *usrdev_creat(uint64_t id, unsigned sig, devmode_t mode)
 	struct usrdev *ud;
 	struct thread *th = current_thread();
 
-	ud = structs_alloc(&usrdevs);
+	ud = heap_alloc(sizeof(*ud));
 	ud->lock = 0;
 	ud->th = th;
 	ud->sig = sig;
 	memset(&ud->remths, 0, sizeof(ud->remths));
-	memset(&ud->apertbl, 0, sizeof(ud->apertbl));
 	TAILQ_INIT(&ud->ioreqs);
 
 	dev_init(&ud->dev, id, (void *) ud, &usrdev_ops, th->euid, th->egid, mode);
 	if (dev_attach(&ud->dev)) {
-		structs_free(ud);
+		heap_free(ud);
 		ud = NULL;
 	}
 	return ud;
@@ -358,6 +362,7 @@ int usrdev_import(struct usrdev *ud, unsigned id, unsigned iopfn,
 {
 	int ret;
 	pfn_t pfn;
+	struct apert *apt;
 
 	assert(__isuaddr(va));
 	if (id >= MAXUSRDEVREMS)
@@ -365,12 +370,13 @@ int usrdev_import(struct usrdev *ud, unsigned id, unsigned iopfn,
 	if (iopfn >= MAXUSRDEVAPERTS)
 		return -EINVAL;
 	spinlock(&ud->lock);
-	if (ud->apertbl[iopfn].devva) {
-		ret = pmap_uimport_cancel(NULL, ud->apertbl[iopfn].devva);
+	apt = &(ud->remths[id].apertbl[iopfn]);
+	if (apt->devva) {
+		ret = pmap_uimport_cancel(NULL, apt->devva);
 		assert(!ret);
 	}
-	ud->apertbl[iopfn].devva = va;
-	ret = pmap_uimport(NULL, va, ud->apertbl[iopfn].l1e, &pfn);
+	apt->devva = va;
+	ret = pmap_uimport(NULL, va, apt->l1e, &pfn);
 	assert(!ret);
 	pmap_commit(NULL);
 	spinunlock(&ud->lock);
@@ -383,14 +389,41 @@ int usrdev_import(struct usrdev *ud, unsigned id, unsigned iopfn,
 	return 0;
 }
 
+int usrdev_bootstrap(struct usrdev *ud, unsigned id, vaddr_t va, size_t sz,
+		     mode_t mode)
+{
+	int ret;
+	pfn_t pfn;
+	void *ptr;
+
+	if (id >= MAXUSRDEVREMS)
+		return -EINVAL;
+	if (sz >= PAGE_SIZE)
+		return -EINVAL;
+
+	ptr = heap_alloc(sz);
+	ret = copy_from_user(ptr, va, sz);
+	if (ret) {
+		heap_free(ptr);
+		return -EFAULT;
+	}
+	
+	assert(__isuaddr(va) && __isuaddr(va + sz));
+	spinlock(&ud->lock);
+	/* Check for setuid/setgid. -1: Current */
+	thbootstrap(ud->remths[id].th, -1, -1, ptr, sz);
+	spinunlock(&ud->lock);
+	return 0;
+}
+
 void usrdev_destroy(struct usrdev *ud)
 {
 	dev_detach(&ud->dev);
-	structs_free(ud);
+	heap_free(ud);
 }
 
 void usrdevs_init(void)
 {
 	setup_structcache(&usrioreqs, usrioreq);
-	setup_structcache(&usrdevs, usrdev);
+	//	setup_structcache(&usrdevs, usrdev);
 }

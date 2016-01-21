@@ -70,6 +70,12 @@ struct thread {
 	gid_t egid;
 	gid_t sgid;
 
+	lock_t bstrap_lock;
+	void *bstrap_ptr;
+	size_t bstrap_sz;
+	uid_t bstrap_uid;
+	gid_t bstrap_gid;
+
 	uaddr_t sigip;
 	uaddr_t sigsp;
 #define THFL_INTR (1L << 0)
@@ -94,6 +100,7 @@ int __getperm(struct thread *th, uid_t uid, gid_t gid, uint32_t mode);
 int __usrcpy(uaddr_t uaddr, void *dst, void *src, size_t sz);
 
 void thintr(unsigned xcpt, vaddr_t va, unsigned long err);
+void thbootstrap(struct thread *th, uid_t uid, gid_t gid, void *ptr, size_t sz);
 void kern_boot(void);
 void kern_bootap(void);
 
