@@ -76,7 +76,10 @@ void __bad_thing(int user, const char *format, ...)
 
 	extern void _boot_putc(int);
 	_setputcfn(_boot_putc, NULL);
-	printf("(bad thing at CPU %d): ", cpu_number());
+	if (user)
+		printf("USRKILL: ");
+	else
+		printf("PANIC at CPU#%d: ", cpu_number());
 	va_start(ap, format);
 	vprintf(format, ap);
 	va_end(ap);
@@ -533,7 +536,7 @@ __dead void __exit(int status)
 	struct thread *child, *tmp;
 
 	if (th->parent == NULL) {
-		panic("Killed System Process %d\nAye!\n", th->pid);
+		panic("Killed System Process %d\n", th->pid);
 	}
 
 	/* In the future, remove shared mapping mechanisms before

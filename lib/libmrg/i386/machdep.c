@@ -9,12 +9,12 @@ void _setupjmp(jmp_buf, void *, void *);
 void framedump(struct intframe *f)
 {
 
-	printf("EIP: %x\tEFLAGS: %x\n", f->eip, f->eflags);
-	printf("\tEAX: %x\tEBX: %x\tECX: %x\tEDX:%x\n",
+	printf("\tEIP: %08x\tEFLAGS: %08x\n", f->eip, f->eflags);
+	printf("\tEAX: %08x\tEBX: %08x\tECX: %08x\tEDX:%08x\n",
 	       f->eax, f->ebx, f->ecx, f->edx);
-	printf("\tEDI: %x\tESI: %x\tEBP: %x\tESP:%x\n",
+	printf("\tEDI: %08x\tESI: %08x\tEBP: %08x\tESP:%08x\n",
 	       f->edi, f->esi, f->ebp, f->esp);
-	printf("\tDS: %x\tES: %x\tFS: %x\tGS: %x\n",
+	printf("\tDS: %08x\tES: %08x\tFS: %08x\tGS: %08x\n",
 	       f->ds, f->es, f->fs, f->gs);
 }
 

@@ -99,10 +99,12 @@ int nmi_entry(uint32_t vect, struct usrframe *f)
 	 * return, when it is triggered in kernel mode.
 	 */
 	if (__predict_false(__crash_requested)) {
+#ifdef CONFIG_CRASH_DUMP_ALLCPUS
 		spinlock(&__crash_lock);
-		printf("Crash report of CPU #%d:\n", cpu_number());
+		printf("CPU#%d Frame Dump:\n", cpu_number());
 		framedump(f);
 		spinunlock(&__crash_lock);
+#endif /* CONFIG_CRASH_DUMP_ALLCPUS */
 		asm volatile ("cli; hlt");
 		/* Not reached */
 		return -1;
@@ -124,13 +126,12 @@ int xcpt_entry(uint32_t vect, struct usrframe *f)
 
 	/* Process crash request */
 	if (__predict_false(vect == 0x6 && __crash_requested)) {
-		printf("This is how it all ends.\n"
-		       "Crash requested from CPU: %d\n", cpu_number());
-		cpu_nmi_broadcast();
+		printf("Kernel Panic at CPU#%d:\n", cpu_number());
 		spinlock(&__crash_lock);
-		printf("Crash report of CPU #%d:\n", cpu_number());
+		printf("CPU#%d Frame Dump:\n", cpu_number());
 		framedump(f);
 		spinunlock(&__crash_lock);
+		cpu_nmi_broadcast();
 		asm volatile ("cli; hlt");
 		return -1;
 	}

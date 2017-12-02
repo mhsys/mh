@@ -137,7 +137,7 @@ int __sys_pgfaulthandler(vaddr_t va, u_long err, struct intframe *f)
 	}
 
 	if (prot == VM_PROT_NIL) {
-		printf("Segmentation fault, should be handled\n");
+		printf("MRG PID %d: Page Fault at Unmapped Addr %08lx\n", getpid(), va);
 		framedump(f);
 		sys_die(-3);
 	}
