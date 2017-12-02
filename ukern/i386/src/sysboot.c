@@ -68,14 +68,35 @@ void serial_putc(int c)
 	outb(SERIAL_PORT, c);
 }
 
+void _boot_putc_init(void)
+{
+	b800_putcinit();
 #ifdef SERIAL_PUTC
-__decl_alias(_boot_putcinit, serial_init);
-__decl_alias(_boot_putc, serial_putc);
-__decl_alias(_boot_sysputc, serial_putc);
+	serial_init();
 #endif
+}
+
+void _boot_putc(int ch)
+{
+	b800_putc(ch);
+#ifdef SERIAL_PUTC
+	serial_putc(ch);
+#endif
+}
+
+void _boot_sysputc(int ch)
+{
+	b800_sysputc(ch);
+#ifdef SERIAL_PUTC
+	serial_putc(ch);
+#endif
+}
 
 void platform_init(void)
 {
+#ifdef SERIAL_PUTC
+	serial_init();
+#endif
 	pic_off();
 	acpi_findrootptr();
 	acpi_init();
