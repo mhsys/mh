@@ -105,6 +105,12 @@ blk_open(uint64_t disk)
 {
 	struct blkdisk *blk;
 
+	if (!initialised) {
+		rb_tree_init(&blk_rbtree, &blk_rbtree_ops);
+		initialised = 1;
+		return NULL;
+	}
+
 	blk = rb_tree_find_node(&blk_rbtree, (void *) &disk);
 	if (blk == NULL) {
 		printf("%s: blkdev %s does not exist.\n", __FUNCTION__, unsquoze_inline(disk).str);

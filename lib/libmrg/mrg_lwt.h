@@ -56,7 +56,7 @@ void __lwt_func(void *, void *);
 
 void lwt_makebuf(lwt_t *lwt, void (*start)(void *), void * arg,
 		 void *stack_base, size_t stack_size);
-lwt_t *lwt_create(void (*start)(void *), void *arg, size_t stack_size, void *priv);
+lwt_t *lwt_create_priv(void (*start)(void *), void *arg, size_t stack_size, void *priv);
 #define lwt_create(_fn, _a, _st) lwt_create_priv(_fn, _a, _st, NULL)
 
 void __lwt_wake(lwt_t *lwt);

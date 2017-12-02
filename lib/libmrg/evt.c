@@ -24,14 +24,6 @@
 static uint64_t alloc_evts[MAXEVTQWORD] = { 0, }; 
 static uint64_t set_evts[MAXEVTQWORD] = {0, };
 static lwt_t *wait_evts[MAXEVT] = {0, };
-static unsigned intr_evts[MAXEVT] = {0, };
-
-static void __evtint_handler(int reqint, void *arg)
-{
-	int reqevt = (int)(uintptr_t)arg;
-
-	__evtset(reqevt);
-}
 
 void evtfree(int evt)
 {
@@ -68,16 +60,9 @@ int evtalloc(void)
 
 void evtset(int evt)
 {
-	unsigned intr;
-
-	assert(evt < MAXEVT);
-	if (!intr_evts[evt]) {
-		intr_evts[evt] = intalloc();
-		inthandler(intr_evts[evt],
-			   __evtint_handler, (void *)(uintptr_t) evt);
-	}
-
-	sys_raise(intr_evts[evt]);
+	preempt_disable();
+	__evtset(evt);
+	preempt_enable();
 }
 
 void __evtset(int evt)
