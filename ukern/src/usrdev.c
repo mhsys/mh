@@ -35,7 +35,7 @@
 #include <uk/structs.h>
 #include <uk/kern.h>
 #include <uk/usrdev.h>
-#include <machine/uk/cpu.h>
+#include <uk/cpu.h>
 #include <uk/pgalloc.h>
 #include <uk/heap.h>
 

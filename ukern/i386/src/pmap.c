@@ -36,7 +36,7 @@
 #include <machine/uk/pmap.h>
 #include <machine/uk/pae.h>
 #include <machine/uk/tlb.h>
-#include <machine/uk/cpu.h>
+#include <uk/cpu.h>
 #include <uk/fixmems.h>
 #include <uk/structs.h>
 #include <uk/pfndb.h>

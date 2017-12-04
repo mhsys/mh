@@ -33,7 +33,7 @@
 #include <uk/bus.h>
 #include <uk/sys.h>
 #include <uk/kern.h>
-#include <machine/uk/cpu.h>
+#include <uk/cpu.h>
 #include <machine/uk/machdep.h>
 
 #define SYSDEV_OWNER 0

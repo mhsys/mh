@@ -34,7 +34,7 @@
 #include <uk/kern.h>
 #include <machine/uk/machdep.h>
 
-#include "apic.h"
+#include "ioapic.h"
 #include "i386.h"
 
 /* ACPICA includes */

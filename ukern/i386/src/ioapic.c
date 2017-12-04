@@ -31,117 +31,35 @@
 #include <uk/logio.h>
 #include <uk/heap.h>
 #include <uk/vmap.h>
+#include <uk/assert.h>
 #include "i386.h"
-#include "apic.h"
-#include <machine/uk/cpu.h>
-#include <machine/uk/apic.h>
-#include <machine/uk/param.h>
+#include "ioapic.h"
+#include "param.h"
 
-void *lapic_base = NULL;
-unsigned lapics_no;
-struct lapic_desc {
-	unsigned physid;
-	unsigned platformid;
-	uint32_t lint[2];
-} *lapics;
 unsigned ioapics_no;
 struct ioapic_desc {
 	void *base;
-	unsigned irq;
-	unsigned pins;
+        unsigned irq;
+        unsigned pins;
 } *ioapics;
 unsigned gsis_no;
 struct gsi_desc {
-	unsigned irq;
-	enum gsimode mode;
-	unsigned ioapic;
-	unsigned pin;
+         unsigned irq;
+         enum gsimode mode;
+         unsigned ioapic;
+         unsigned pin;
 } *gsis;
-
-
-
 
 /* Memory Registers */
 #define IO_REGSEL 0x00
 #define IO_WIN    0x10
 
 /* I/O Registers */
-#define IO_ID		0x00
-#define IO_VER		0x01
-#define IO_ARB		0x02
-#define IO_RED_LO(x) 	(0x10 + 2*(x))
-#define IO_RED_HI(x)	(0x11 + 2*(x))
-
-void lapic_init(paddr_t base, unsigned no)
-{
-	lapic_base = kvmap(base, LAPIC_SIZE);
-	lapics = heap_alloc(sizeof(struct lapic_desc) * no);
-	lapics_no = no;
-	dprintf("LAPIC PA: %08llx VA: %p\n", base, lapic_base);
-}
-
-void lapic_add(uint16_t physid, uint16_t plid)
-{
-	static unsigned i = 0;
-
-	lapics[i].physid = physid;
-	lapics[i].platformid = plid;
-	lapics[i].lint[0] = 0x10000;
-	lapics[i].lint[1] = 0x10000;
-	i++;
-}
-
-void lapic_add_nmi(uint8_t pid, int l)
-{
-	int i;
-
-	if (pid == 0xff) {
-		for (i = 0; i < lapics_no; i++)
-			lapics[i].lint[l] =
-				(1L << 16) | (APIC_DLVR_NMI << 8);
-		return;
-	}
-	for (i = 0; i < lapics_no; i++) {
-		if (lapics[i].platformid == pid) {
-			if (l)
-				l = 1;
-			lapics[i].lint[l] = (APIC_DLVR_NMI << 8);
-			return;
-		}
-	}
-	printf("Warning: LAPIC NMI for non-existing platform ID %d\n",
-	       pid);
-}
-
-void lapic_configure(void)
-{
-	unsigned i, physid = lapic_getcurrent();
-	struct lapic_desc *d = NULL;
-
-	for (i = 0; i < lapics_no; i++) {
-		if (lapics[i].physid == physid)
-			d = lapics + i;
-	}
-	if (d == NULL) {
-		printf("Warning: Current CPU not in Platform Tables!\n");
-		/* Try to continue, ignore the NMI configuration */
-	} else {
-		lapic_write(L_LVT_LINT(0), d->lint[0]);
-		lapic_write(L_LVT_LINT(1), d->lint[1]);
-	}
-	/* Enable LAPIC */
-	lapic_write(L_MISC, lapic_read(L_MISC) | 0x100);
-}
-
-void lapic_platform_done(void)
-{
-	int i;
-
-	for (i = 0; i < lapics_no; i++)
-		cpu_add(lapics[i].physid, lapics[i].platformid);
-	/* Since we're here, configure LAPIC of BSP */
-	lapic_configure();
-}
+#define IO_ID          0x00
+#define IO_VER         0x01
+#define IO_ARB         0x02
+#define IO_RED_LO(x)   (0x10 + 2*(x))
+#define IO_RED_HI(x)   (0x11 + 2*(x))
 
 void ioapic_init(unsigned no)
 {

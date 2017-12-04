@@ -35,7 +35,7 @@
 #include <uk/kern.h>
 #include <uk/pfndb.h>
 #include <uk/hwdev.h>
-#include <machine/uk/cpu.h>
+#include <uk/cpu.h>
 #include <machine/uk/platform.h>
 #include <uk/pgalloc.h>
 #include <uk/heap.h>

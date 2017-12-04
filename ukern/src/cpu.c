@@ -29,20 +29,26 @@
 
 #include <uk/types.h>
 #include <uk/string.h>
-#include <uk/logio.h>
-#include <machine/uk/apic.h>
-#include <machine/uk/cpu.h>
-#include <machine/uk/param.h>
-#include <machine/uk/i386.h>
 #include <uk/heap.h>
+#include <uk/logio.h>
+#include <uk/cpu.h>
+#include <machine/uk/pcpu.h>
 
 cpumask_t cpus_active = 0;
 
-static int number_cpus = 0;
-static int cpu_phys_to_id[UKERN_MAX_PHYSCPUS] = { -1, };
+static unsigned number_cpus = 0;
+static unsigned cpu_phys_to_id[UKERN_MAX_PHYSCPUS] = { -1, };
 static struct cpu_info *cpus[UKERN_MAX_CPUS] = { 0, };
 
-extern char _ap_start, _ap_end;
+unsigned cpuid_fromphys(unsigned physid)
+{
+	unsigned id;
+
+	dbgassert(physid < UKERN_MAX_PHYSCPUS);
+	id = cpu_phys_to_id[physid];
+	dbgassert(id < UKERN_MAX_CPUS);
+	return id;
+}
 
 struct cpu_info *cpuinfo_get(unsigned id)
 {
@@ -57,7 +63,10 @@ struct cpu_info *cpuinfo_get(unsigned id)
 	return cpus[id];
 }
 
-struct cpu *cpu_setup(int);
+unsigned cpu_numpresent(void)
+{
+	return number_cpus;
+}
 
 int cpu_add(uint16_t physid, uint16_t platformid)
 {
@@ -79,12 +88,15 @@ int cpu_add(uint16_t physid, uint16_t platformid)
 
 	cpuinfo = heap_alloc(sizeof(struct cpu_info));
 	cpuinfo->cpu_id = id;
-	cpuinfo->thread = NULL;
-	cpuinfo->cpu = cpu_setup(id);
+
 	cpuinfo->phys_id = physid;
 	cpuinfo->plat_id = platformid;
-	cpuinfo->tss.iomap = 108;
+
+
 	cpuinfo->self = cpuinfo;
+	TAILQ_INIT(&cpuinfo->resched);
+
+
 	cpus[id] = cpuinfo;
 	cpu_phys_to_id[physid] = id;
 
@@ -97,19 +109,17 @@ void cpu_nmi(int cpu)
 {
 	struct cpu_info *ci = cpuinfo_get(cpu);
 
-	if (ci == NULL)
-		return;
-	lapic_ipi(ci->phys_id, APIC_DLVR_NMI, 0);
+	if (ci != NULL)
+		pcpu_nmi(ci->phys_id);
 }
 
 void cpu_nmi_broadcast(void)
 {
-	lapic_ipi_broadcast(APIC_DLVR_NMI, 0);
+	pcpu_nmiall();
 }
 
 void cpu_nmi_mask(cpumask_t map)
 {
-
 	foreach_cpumask(map, cpu_nmi(i));
 }
 
@@ -117,67 +127,47 @@ void cpu_ipi(int cpu, uint8_t vct)
 {
 	struct cpu_info *ci = cpuinfo_get(cpu);
 
-	if (ci == NULL)
-		return;
-	lapic_ipi(ci->phys_id, APIC_DLVR_FIX, vct);
+	if (ci != NULL)
+		pcpu_ipi(ci->phys_id, vct);
 }
 
 void cpu_ipi_broadcast(uint8_t vct)
 {
-
-	lapic_ipi_broadcast(APIC_DLVR_FIX, vct);
+	pcpu_ipiall(vct);
 }
 
 void cpu_ipi_mask(cpumask_t map, uint8_t vct)
 {
-
 	foreach_cpumask(map, cpu_ipi(i, vct));
 }
 
-int cpu_number_from_lapic(void)
+void cpu_enter(void)
 {
-	unsigned physid, id;
-	extern int cpu_phys_to_id[UKERN_MAX_PHYSCPUS];
+	unsigned cpuid;
+	unsigned pcpuid;
+	struct cpu_info *cpu;
 
-	physid = lapic_getcurrent();
-	dbgassert(physid < UKERN_MAX_PHYSCPUS);
-	id = cpu_phys_to_id[physid];
-	dbgassert(id < UKERN_MAX_CPUS);
-	return id;
+	/* Setup Physical CPU */
+	pcpuid = pcpu_init();
+
+	/* Setup pCPU. */
+	cpuid = cpuid_fromphys(pcpuid);
+	cpu = cpuinfo_get(cpuid);
+	pcpu_setup(&cpu->pcpu, cpu);
 }
 
-void cpu_wakeup_aps(void)
+void cpu_wakeall(void)
 {
+	unsigned cpuid = cpu_number();
 	int i;
 	struct cpu_info *cpu;
-	unsigned cpuid = cpu_number_from_lapic();
-
-	cmos_write(0xf, 0xa);	// Shutdown causes warm reset.
 
 	for (i = 0; i < number_cpus; i++) {
 		if (i == cpuid)
 			continue;
-		cpu = cpuinfo_get(i);
-
 		printf("Waking up CPU %02d...", i);
-
-		/* Setup AP bootstrap page */
-		memcpy((void *) (UKERNBASE + UKERN_APBOOT(i)), &_ap_start,
-		       (size_t) & _ap_end - (size_t) & _ap_start);
-
-		/* Setup Warm Reset Vector */
-		*(volatile uint16_t *) (UKERNBASE + 0x467) = UKERN_APBOOT(i) & 0xf;
-		*(volatile uint16_t *) (UKERNBASE + 0x469) = UKERN_APBOOT(i) >> 4;
-
-		/* INIT-SIPI-SIPI sequence. */
-		lapic_ipi(cpu->phys_id, APIC_DLVR_INIT, 0);
-		_delay();
-		lapic_ipi(cpu->phys_id, APIC_DLVR_START,
-			  UKERN_APBOOT(i) >> 12);
-		_delay();
-		lapic_ipi(cpu->phys_id, APIC_DLVR_START,
-			  UKERN_APBOOT(i) >> 12);
-		_delay();
-		printf(" done\n");
+		cpu = cpuinfo_get(i);
+		pcpu_wake(cpu->phys_id);
 	}
+
 }

@@ -219,8 +219,8 @@ ENTRY(_fixup_gdt)
 	ret
 END(_fixup_gdt)
 
-	.globl _C_LABEL(_load_segs)
-_C_LABEL(_load_segs):
+	.globl _C_LABEL(_set_tss)
+_C_LABEL(_set_tss):
 	push  %ebp
 	mov   %esp, %ebp
 	/* TSS (5 + 2*n) */
@@ -241,6 +241,13 @@ _C_LABEL(_load_segs):
 	add  $5, %eax
 	shl  $3, %eax
 	ltr  %ax
+	pop  %ebp
+	ret
+
+	.globl _C_LABEL(_set_fs)
+_C_LABEL(_set_fs):
+	push  %ebp
+	mov   %esp, %ebp
 	/* FS (5 + 2*n + 1)*/
 	mov  8(%ebp), %ecx
 	mov  %ecx, %eax
@@ -249,7 +256,7 @@ _C_LABEL(_load_segs):
 	movl $0, (%eax)
 	movl $0, 4(%eax)
 	movw $4, (%eax)
-	movl 0x10(%ebp), %ecx
+	movl 0xc(%ebp), %ecx
 	movw %cx, 2(%eax)
 	shr  $16, %ecx
 	movb %cl, 4(%eax)

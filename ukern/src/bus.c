@@ -34,7 +34,7 @@
 #include <uk/structs.h>
 #include <uk/assert.h>
 #include <uk/kern.h>
-#include <machine/uk/cpu.h>
+#include <uk/cpu.h>
 #include <uk/sys.h>
 #include <uk/bus.h>
 

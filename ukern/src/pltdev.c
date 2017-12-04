@@ -33,7 +33,7 @@
 #include <uk/bus.h>
 #include <uk/sys.h>
 #include <uk/pfndb.h>
-#include <machine/uk/cpu.h>
+#include <uk/cpu.h>
 #include <machine/uk/platform.h>
 #include <uk/heap.h>
 #include <uk/kern.h>

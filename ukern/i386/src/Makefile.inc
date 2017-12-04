@@ -2,7 +2,7 @@
 TMP= boot.S $(SRCS)
 SRCS:= $(TMP)
 SRCS+= biosops.S idt.S text.S locks.S pae.S
-SRCS+= cpu.c apic.c sysboot.c tlb.c pci.c hpet.c
+SRCS+= ioapic.c lapic.c sysboot.c tlb.c pci.c hpet.c
 
 # Used by MI part.
 SRCS+= pmap.c machdep.c

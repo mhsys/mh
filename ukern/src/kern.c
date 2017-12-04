@@ -40,8 +40,8 @@
 #include <uk/heap.h>
 #include <uk/vmap.h>
 #include <uk/structs.h>
+#include <uk/cpu.h>
 #include <machine/uk/pmap.h>
-#include <machine/uk/cpu.h>
 #include <machine/uk/machdep.h>
 #include <machine/uk/platform.h>
 #include <machine/uk/pmap.h>
@@ -1264,7 +1264,7 @@ void kern_boot(void)
 	current_cpu()->idle_thread = th;
 	/* We are idle thread now. */
 
-	cpu_wakeup_aps();
+	cpu_wakeall();
 
 	/* Create init */
 	th = thnew(__initstart);
@@ -1284,6 +1284,8 @@ void kern_boot(void)
 void kern_bootap(void)
 {
 	struct thread *th;
+
+	printf("CPU %02d on.\n", cpu_number());
 
 	/* initialise idle thread */
 	th = structs_alloc(&threads);

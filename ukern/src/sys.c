@@ -32,7 +32,7 @@
 #include <uk/logio.h>
 #include <uk/sys.h>
 #include <uk/kern.h>
-#include <machine/uk/cpu.h>
+#include <uk/cpu.h>
 #include <machine/uk/machdep.h>
 
 static int sys_putc(int ch)

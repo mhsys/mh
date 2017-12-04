@@ -29,7 +29,6 @@
 
 #include <machine/uk/asm.h>
 #include <machine/uk/param.h>
-#include <machine/uk/cpu.h>
 
 	.altmacro
 .macro _do_entry vct
@@ -45,7 +44,7 @@
 	mov $KDS, %ax
 	mov %ax, %ds
 	mov %ax, %es
-	call _C_LABEL(cpu_number_from_lapic)
+	call _C_LABEL(lapic_getcurrent)
 	shl $4, %ax
 	add $(6 << 3), %ax
 	mov %ax, %fs

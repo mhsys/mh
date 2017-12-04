@@ -31,13 +31,14 @@
 #include <uk/string.h>
 #include <uk/setjmp.h>
 #include <uk/logio.h>
-#include <machine/uk/cpu.h>
+#include <uk/cpu.h>
 #include <machine/uk/param.h>
 #include <machine/uk/machdep.h>
 #include <uk/locks.h>
 #include <uk/kern.h>
 
 #include "i386.h"
+#include "lapic.h"
 #include "tlb.h"
 
 static lock_t __crash_lock = 0;
@@ -199,12 +200,12 @@ int intr_entry(uint32_t vect, struct usrframe *f)
 	th->frame = f;
 
 	if (vect == VECT_KICK) {
-		lapic_write(L_EOI, 0);
+		lapic_eoi();
 		cpu_kick();
 	} else if (vect >= VECT_IRQ0) {
 		unsigned irq = vect - VECT_IRQ0;
 		irqsignal(irq, gsi_is_level(irq));
-		lapic_write(L_EOI, 0);
+		lapic_eoi();
 	}
 
 	do_softirq();
@@ -216,16 +217,16 @@ void ___usrentry_enter(void *);
 
 void usrframe_switch(void)
 {
-	current_cpuinfo()->tss.esp0 =
+	current_pcpu()->tss.esp0 =
 		(uint32_t) current_thread()->stack_4k + 0xff0;
 }
 
 void usrframe_enter(struct usrframe *f)
 {
 
-	current_cpuinfo()->tss.esp0 =
+	current_pcpu()->tss.esp0 =
 		(uint32_t) current_thread()->stack_4k + 0xff0;
-	current_cpuinfo()->tss.ss0 = KDS;
+	current_pcpu()->tss.ss0 = KDS;
 	___usrentry_enter((void *) f);
 }
 

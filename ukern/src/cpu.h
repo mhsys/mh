@@ -27,15 +27,14 @@
  */
 
 
-#ifndef _i386_cpu_h
-#define _i386_cpu_h
+#ifndef __cpu_h
+#define __cpu_h
 
 #ifndef _ASSEMBLER
 #include <uk/types.h>
 #include <uk/assert.h>
 #include <uk/queue.h>
-#include <machine/uk/apic.h>
-#include <machine/uk/i386.h>
+#include <uk/pcpu.h>
 
 #define UKERN_MAX_CPUS 64
 #define UKERN_MAX_PHYSCPUS 64
@@ -44,22 +43,30 @@ struct cpu_info {
 	/* Must be first */
 	uint32_t cpu_id;	/* fs:0 */
 	struct thread *thread;	/* fs:4 */
-	struct cpu *cpu;
-
-	int tlbop; /* TLB shootdown */
+	struct cpu_info *self;
+	struct pcpu pcpu;
 
 	uint16_t phys_id;
 	uint16_t plat_id;
-	struct tss tss;
-	struct cpu_info *self;
+
+	struct thread *idle_thread;
+	uint64_t softirq;
+
+	unsigned usrpgfault;
+	jmp_buf usrpgfaultctx;
+	vaddr_t usrpgaddr;
+
+	int tlbop; /* TLB shootdown */
+
+	 TAILQ_HEAD(, thread) resched;
 };
 
 extern cpumask_t cpus_active;
 
+void cpu_wakeall(void);
+void cpu_enter(void);
 int cpu_add(uint16_t physid, uint16_t acpiid);
 struct cpu_info *cpuinfo_get(unsigned id);
-void cpu_wakeup_aps(void);
-int cpu_number_from_lapic(void);
 
 void cpu_nmi(int cpu);
 void cpu_nmi_mask(cpumask_t map);
@@ -104,41 +111,29 @@ void cpu_ipi_broadcast(uint8_t vct);
 		};							\
 	} while(0)
 
-static inline struct cpu_info *current_cpuinfo(void)
+static inline struct cpu_info *current_cpu(void)
 {
-	struct cpu_info *ptr;
-
-	asm volatile ("movl %%fs:0, %0\n":"=r" (ptr));
-	return ptr;
+	return (struct cpu_info *)pcpu_getdata();
 }
 
 static inline int cpu_number(void)
 {
-	struct cpu_info *ptr;
-
-	asm volatile ("movl %%fs:0, %0\n":"=r" (ptr));
-        return ptr->cpu_id;
-}
-
-static inline struct cpu *current_cpu(void)
-{
-	struct cpu_info *ptr;
-
-	asm volatile ("movl %%fs:0, %0\n":"=r" (ptr));
-	return ptr->cpu;
+	return current_cpu()->cpu_id;
 }
 
 static inline struct thread *current_thread(void)
 {
-	struct cpu_info *ptr;
-
-	asm volatile ("movl %%fs:0, %0\n":"=r" (ptr));
-	return ptr->thread;
+	return current_cpu()->thread;
 }
 
 static inline void set_current_thread(struct thread *t)
 {
-	current_cpuinfo()->thread = t;
+	current_cpu()->thread = t;
+}
+
+static inline struct pcpu *current_pcpu(void)
+{
+	return &current_cpu()->pcpu;
 }
 
 

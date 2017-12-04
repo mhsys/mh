@@ -28,14 +28,14 @@
 
 
 #include <uk/types.h>
+#include <uk/cpu.h>
 #include <machine/uk/tlb.h>
-#include <machine/uk/cpu.h>
 
 static int __tlbcnt = 0;
 
 void __flush_tlbs_on_nmi(void)
 {
-	int tlbf = __sync_fetch_and_and(&current_cpuinfo()->tlbop, 0);
+	int tlbf = __sync_fetch_and_and(&current_cpu()->tlbop, 0);
 
 	if (tlbf & TLBF_GLOBAL)
 		__flush_global_tlbs();
