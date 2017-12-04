@@ -1,7 +1,3 @@
-ifeq ($(MACHINE),i386)
-TOOLCHAINTARGET=i686-elf-murgia
-endif
-
 TOOLCHAINTARGET_DIR= $(SRCROOT)/toolchain/install/$(TOOLCHAINTARGET)
 TOOLCHAINBIN= $(PWD)/$(SRCROOT)/toolchain/install/bin
 export CC= $(TOOLCHAINBIN)/$(TOOLCHAINTARGET)-gcc

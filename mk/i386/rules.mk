@@ -1,3 +1,1 @@
-CFLAGS+=
-ASFLAGS+=
-
+TOOLCHAINTARGET=i686-elf-murgia

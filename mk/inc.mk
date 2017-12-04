@@ -18,4 +18,4 @@ incs:
 endif
 
 includes: incs
-	for dir in $(INCSUBDIRS); do (cd $$dir; $(MAKE) includes incdir incs); done
+	for dir in $(INCSUBDIRS); do (cd $$dir && $(MAKE) includes incdir incs) || break 0; done
