@@ -11,5 +11,10 @@ SUBDIRS+= ukern
 include $(MKDIR)/subdir.mk
 include $(MKDIR)/def.mk
 
+.PHONY: headers toolchain
 headers: include
 	make -C include
+
+toolchain:
+	$(MAKE) headers
+	(cd toolchain; $(MAKE) populate all)
