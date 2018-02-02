@@ -165,6 +165,7 @@ static struct thread *thnew(void (*__start) (void))
 	th->rgid = 0;
 	th->egid = 0;
 	th->sgid = 0;
+	th->tls = 0;
 
 	memset(&th->usrdevs, 0, sizeof(th->usrdevs));
 	memset(&th->bus, 0, sizeof(th->bus));
@@ -174,6 +175,8 @@ static struct thread *thnew(void (*__start) (void))
 	th->vtt_almdiff = 0;
 	th->vtt_offset = 0;
 	th->vtt_rttbase = 0;
+
+	th->frame = th->stack_4k;
 
 	_setupjmp(th->ctx, __start, th->stack_4k + 0xff0);
 	return th;
@@ -218,6 +221,7 @@ struct thread *thfork(void)
 	nth->rgid = cth->rgid;
 	nth->egid = cth->egid;
 	nth->sgid = cth->sgid;
+	nth->tls = nth->tls;
 
 	nth->sigip = cth->sigip;
 	nth->sigsp = cth->sigsp;
@@ -309,6 +313,13 @@ void thraise(struct thread *th, unsigned vect)
 	assert(vect < MAXSIGNALS);
 	__sync_or_and_fetch(&th->softintrs, (1LL << vect));
 	wake(th);
+}
+
+void thtls(struct thread *th, uaddr_t tls, size_t sz)
+{
+
+	th->tls = tls;
+	return usrframe_settls(th->frame, tls);
 }
 
 static void thfree(struct thread *th)
@@ -472,6 +483,9 @@ void schedule(int newst)
 		if (th->vtt_almdiff) {
 			thvtalrm(th->vtt_almdiff);
 		}
+
+		if (!thread_is_idle(th))
+			usrframe_settls(th->frame, th->tls);
 
 		if (thread_is_idle(oldth))
 			goto _skip_resched;
@@ -1211,14 +1225,14 @@ static vaddr_t elfld(void *elfimg)
 
 static void __initstart(void)
 {
+	struct thread *th = current_thread();
 	vaddr_t entry;
-	struct usrframe usrframe;
 	extern void *_init_start;
 
 	entry = elfld(_init_start);
-	usrframe_setup(&usrframe, entry, 0);
+	usrframe_setup(th->frame, entry, 0);
 	__insn_barrier();
-	usrframe_enter(&usrframe);
+	usrframe_enter(th->frame);
 	/* Not reached */
 }
 
@@ -1252,6 +1266,7 @@ void kern_boot(void)
 	th->rgid = 0;
 	th->egid = 0;
 	th->sgid = 0;
+	th->tls = 0;
 
 	th->vtt_almdiff = 0;
 	th->vtt_offset = 0;
@@ -1307,6 +1322,7 @@ void kern_bootap(void)
 	th->rgid = 0;
 	th->egid = 0;
 	th->sgid = 0;
+	th->tls = 0;
 
 	th->vtt_almdiff = 0;
 	th->vtt_offset = 0;

@@ -115,6 +115,14 @@ int sys_raise(int signal)
 	return ret;
 }
 
+int sys_tls(void *tls)
+{
+	int ret;
+
+	__syscall1(SYS_TLS, (unsigned long)tls, ret);
+	return ret;
+}
+
 int sys_map(vaddr_t vaddr, sys_map_flags_t perm)
 {
 	int ret;

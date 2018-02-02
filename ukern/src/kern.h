@@ -107,6 +107,8 @@ struct thread {
 	uint16_t status;
 	unsigned cpu;
 	 TAILQ_ENTRY(thread) sched_list;
+
+	uaddr_t tls;
 };
 
 struct cpu {

@@ -46,6 +46,7 @@ int sys_childstat(struct sys_childstat *cs);
 int sys_fork(void);
 int sys_getpid(void);
 int sys_raise(int);
+int sys_tls(void *);
 int sys_map(vaddr_t vaddr, sys_map_flags_t perm);
 int sys_move(vaddr_t dst, vaddr_t src);
 
