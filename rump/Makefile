@@ -6,7 +6,7 @@ BUILDRUMP=buildrump-20170910
 
 SUBDIRS+= librumpmrg
 
-ALL_PREDEP = exts build_rump
+ALL_PREDEP = exts build_rump_kernel
 EXTS += $(BUILDRUMP)
 
 include $(MKDIR)/sysflags.mk
@@ -19,8 +19,8 @@ export RUMPUSER_THREADS=fiber
 
 .PHONY: build_rump clean_rump
 
-build_rump:
-	$(PWD)/$(EXTSDIR)/$(BUILDRUMP)/buildrump.sh -q \
+build_rump_kernel:
+	$(PWD)/$(EXTSDIR)/$(BUILDRUMP)/buildrump.sh -q -k\
 	    -s $(PWD)/$(EXTSDIR)/$(BUILDRUMP)/src \
 	    -F CFLAGS='${CFLAGS} -DHOST_NOT_POSIX' \
             -F LDFLAGS='${LDFLAGS}' \
