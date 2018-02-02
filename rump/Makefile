@@ -20,11 +20,13 @@ export RUMPUSER_THREADS=fiber
 .PHONY: build_rump clean_rump
 
 build_rump:
-	$(PWD)/$(EXTSDIR)/$(BUILDRUMP)/buildrump.sh -q -k \
+	$(PWD)/$(EXTSDIR)/$(BUILDRUMP)/buildrump.sh -q \
 	    -s $(PWD)/$(EXTSDIR)/$(BUILDRUMP)/src \
 	    -F CFLAGS='${CFLAGS} -DHOST_NOT_POSIX' \
             -F LDFLAGS='${LDFLAGS}' \
+            -T tools \
 	    -d ${INSTALLDIR}/usr \
+	    -V RUMP_KERNEL_IS_LIBC=1 -V BUILDRUMP_SYSROOT=yes		\
 	    fullbuild
 
 clean_rump:

@@ -1,0 +1,115 @@
+diff -Nru buildrump-20170910.dist/buildrump.sh buildrump-20170910/buildrump.sh
+--- buildrump-20170910.dist/buildrump.sh	2017-11-25 06:44:54.000000000 -0800
++++ buildrump-20170910/buildrump.sh	2018-01-30 20:45:31.792095882 -0800
+@@ -536,7 +536,7 @@
+ int main() {gzopen(NULL, NULL); return 0;}' -lz \
+ 	    || die 'Host zlib (libz, -lz) required, please install one!'
+ 
+-	${KERNONLY} || probe_rumpuserbits
++	#${KERNONLY} || probe_rumpuserbits
+ 
+ 	checkcompiler
+ 
+@@ -774,7 +774,8 @@
+ 	# 4) install
+ 	#
+ 
+-	DIRS_first='lib/librumpuser'
++	#DIRS_first='lib/librumpuser'
++	DIRS_first=
+ 	DIRS_second='lib/librump'
+ 	DIRS_third="lib/librumpdev lib/librumpnet lib/librumpvfs
+ 	    sys/rump/dev sys/rump/fs sys/rump/kern sys/rump/net
+@@ -804,7 +805,7 @@
+ 		mkmakefile ${OBJDIR}/Makefile.all \
+ 		    sys/rump ${DIRS_emul} ${BRDIR}/brlib
+ 	else
+-		DIRS_third="lib/librumpclient ${DIRS_third}"
++		#DIRS_third="lib/librumpclient ${DIRS_third}"
+ 
+ 		mkmakefile ${OBJDIR}/Makefile.first ${DIRS_first}
+ 		mkmakefile ${OBJDIR}/Makefile.second ${DIRS_second}
+@@ -829,7 +830,6 @@
+ 
+ 	if ! ${KERNONLY}; then
+ 		mkmakefile ${OBJDIR}/Makefile.utils \
+-		    usr.bin/rump_server usr.bin/rump_allserver \
+ 		    usr.bin/rump_wmd
+ 		for target in ${targets}; do
+ 			domake ${OBJDIR}/Makefile.utils ${target}
+@@ -1149,6 +1149,9 @@
+ 		diagout Mach-O object format used by OS X is not yet supported
+ 		target_supported=false
+ 		;;
++	*-murgia)
++		target_aupported=true
++		;;
+ 	*)
+ 		target_supported=false
+ 		;;
+diff -Nru buildrump-20170910.dist/src/Makefile buildrump-20170910/src/Makefile
+--- buildrump-20170910.dist/src/Makefile	2017-11-25 11:18:32.000000000 -0800
++++ buildrump-20170910/src/Makefile	2018-01-30 20:45:31.792095882 -0800
+@@ -137,7 +137,7 @@
+ # BUILD_${dir}=no, or that have no ${dir}/Makefile.
+ #
+ _SUBDIR=	tools lib include gnu external crypto/external bin games
+-_SUBDIR+=	libexec sbin usr.bin
++_SUBDIR+=	libexec sbin #usr.bin
+ _SUBDIR+=	usr.sbin share sys etc tests compat
+ _SUBDIR+=	.WAIT rescue .WAIT distrib regress
+ 
+diff -Nru buildrump-20170910.dist/src/sys/rump/dev/Makefile.rumpdevcomp buildrump-20170910/src/sys/rump/dev/Makefile.rumpdevcomp
+--- buildrump-20170910.dist/src/sys/rump/dev/Makefile.rumpdevcomp	2017-11-25 11:18:33.000000000 -0800
++++ buildrump-20170910/src/sys/rump/dev/Makefile.rumpdevcomp	2018-01-30 20:45:31.792095882 -0800
+@@ -5,7 +5,7 @@
+ 		pad pud	putter raidframe rnd scsipi sysmon vnd wscons	\
+ 		opencrypto
+ 
+-RUMPUSBDEVS=	ubt ucom ugenhc ulpt umass usb
++RUMPUSBDEVS=	ubt ucom ulpt umass usb
+ 
+ RUMPPCIDEVS=	pci pci_if_iwn pci_if_pcn pci_if_wm
+ RUMPPCIDEVS+=	pci_usbhc
+diff -Nru buildrump-20170910.dist/src/sys/rump/listsrcdirs buildrump-20170910/src/sys/rump/listsrcdirs
+--- buildrump-20170910.dist/src/sys/rump/listsrcdirs	2017-11-25 11:18:33.000000000 -0800
++++ buildrump-20170910/src/sys/rump/listsrcdirs	2018-01-30 20:45:31.792095882 -0800
+@@ -86,7 +86,7 @@
+ # when targeting POSIX-y platforms
+ lsrc posix /lib/lib		rump rumpdev rumpnet rumpvfs
+ lsrc posix /lib/lib		rumpuser rumpclient rumphijack
+-lsrc posix /usr.bin/		rump_server rump_allserver shmif_dumpbus
++#lsrc posix /usr.bin/		rump_server rump_allserver shmif_dumpbus
+ 
+ # assorted userspace sources, mostly for configuration & diagnostics
+ # NOTE! libc++ is handled below as a special case due to the NetBSD
+diff -Nru buildrump-20170910.dist/src/sys/rump/net/Makefile.rumpnetcomp buildrump-20170910/src/sys/rump/net/Makefile.rumpnetcomp
+--- buildrump-20170910.dist/src/sys/rump/net/Makefile.rumpnetcomp	2017-11-25 11:18:33.000000000 -0800
++++ buildrump-20170910/src/sys/rump/net/Makefile.rumpnetcomp	2018-01-30 20:45:31.792095882 -0800
+@@ -4,7 +4,7 @@
+ .include <bsd.own.mk>
+ 
+ RUMPNETCOMP=	agr bridge net net80211 netbt netinet netinet6
+-RUMPNETCOMP+=	gif netmpls npf local pppoe shmif tap
++RUMPNETCOMP+=	gif netmpls npf local pppoe tap
+ 
+ .if ${MKSLJIT} != "no" || make(rumpdescribe)
+ RUMPNETCOMP+=	bpfjit
+@@ -14,13 +14,13 @@
+ RUMPNETCOMP+=	virtif
+ .endif
+ 
+-RUMPNETSOCKIN=	sockin
++#RUMPNETSOCKIN=	sockin
+ 
+ .for var in ${RUMPNETCOMP}
+ RUMPNETLIBS+=lib${var}
+ RUMPNETLDADD+=-lrumpnet_${var}
+ .endfor
+ 
+-.for var in ${RUMPNETSOCKIN}
+-RUMPNETLIBS+=lib${var}
+-.endfor
++#.for var in ${RUMPNETSOCKIN}
++#RUMPNETLIBS+=lib${var}
++#.endfor
