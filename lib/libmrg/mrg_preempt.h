@@ -47,9 +47,8 @@ preempt_enable(void)
 static inline void
 preempt_disable(void)
 {
-	if (!__preemption_level++) {
-		sys_cli();
-	}
+	sys_cli();
+	__preemption_level++;
 }
 
 static inline void
