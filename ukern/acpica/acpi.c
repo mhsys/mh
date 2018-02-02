@@ -59,7 +59,8 @@ char *madt_subtstr[] = {
 
 #if _DREX_MACHINE==i386
 
-#include <machine/uk/apic.h>
+#include <machine/uk/lapic.h>
+#include <machine/uk/ioapic.h>
 
 #define madt_foreach(_cases)						\
 	do {								\
