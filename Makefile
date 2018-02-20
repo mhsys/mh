@@ -1,13 +1,22 @@
 SRCROOT=.
 MKDIR=$(SRCROOT)/mk
-SUBDIRS+= include lib/libuk lib/libmrg lib rump sys
+include $(MKDIR)/mk.conf
+
 
 ifneq ($(TESTS)z,z)
 SUBDIRS += tests
 endif
 
-SUBDIRS+= ukern
+SUBDIRS+= lib rump sys ukern
 
+INCSUBDIRS= \
+	$(SRCROOT)/ukern/src \
+	$(SRCROOT)/ukern/$(MACHINE)/src \
+	$(SRCROOT)/lib/libuk \
+	$(SRCROOT)/lib/libmrg \
+	$(SRCROOT)/lib/libsquoze
+
+include $(MKDIR)/inc.mk
 include $(MKDIR)/subdir.mk
 include $(MKDIR)/def.mk
 

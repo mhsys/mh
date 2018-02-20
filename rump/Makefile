@@ -11,7 +11,7 @@ EXTS += $(BUILDRUMP)
 
 include $(MKDIR)/sysflags.mk
 export HOST_CC=cc
-export EXTRA_CFLAGS=${CFLAGS}
+export EXTRA_CFLAGS=-D_FORTIFY_LEVEL=0 ${CFLAGS}
 export EXTRA_LDFLAGS=${LDFLAGS}
 export MKPIC=no
 export RUMP_CURLWP=hypercall
@@ -20,13 +20,13 @@ export RUMPUSER_THREADS=fiber
 .PHONY: build_rump clean_rump
 
 build_rump:
-	$(PWD)/$(EXTSDIR)/$(BUILDRUMP)/buildrump.sh -q -k\
+	$(PWD)/$(EXTSDIR)/$(BUILDRUMP)/buildrump.sh -k\
 	    -s $(PWD)/$(EXTSDIR)/$(BUILDRUMP)/src \
-	    -F CFLAGS='${CFLAGS} -DHOST_NOT_POSIX' \
+	    -F CFLAGS='${CFLAGS} -DHOST_NOT_POSIX -Wno-error=attributes' \
             -F LDFLAGS='${LDFLAGS}' \
             -T tools \
 	    -d ${INSTALLDIR}/usr \
-	    -V RUMP_KERNEL_IS_LIBC=1 -V BUILDRUMP_SYSROOT=yes		\
+            -V MKMAN=no -V MKDOC=no -V MKHTML=no \
 	    fullbuild
 
 clean_rump:
