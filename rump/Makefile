@@ -6,7 +6,7 @@ BUILDRUMP=buildrump-20170910
 
 SUBDIRS+= librumpmrg
 
-ALL_PREDEP = exts
+ALL_PREDEP = exts build_rump
 EXTS += $(BUILDRUMP)
 
 include $(MKDIR)/sysflags.mk
@@ -30,7 +30,6 @@ build_rump:
 clean_rump:
 	rm -rf $(PWD)/obj $(PWD)/rump
 
-ALL_TARGET+= build_rump
 
 # Add this if you want rump components to be rebuilt every time you
 # clean the rest of the source code.
@@ -39,5 +38,6 @@ ALL_TARGET+= build_rump
 #
 
 include $(MKDIR)/exts.mk
+include $(MKDIR)/lib.mk
 include $(MKDIR)/subdir.mk
 include $(MKDIR)/def.mk
