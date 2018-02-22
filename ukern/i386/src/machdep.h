@@ -47,7 +47,8 @@ void usrframe_extint(struct usrframe *f, vaddr_t ip, vaddr_t sp,
 		     uint32_t fl, unsigned xcpt, uint64_t sigs);
 void usrframe_setret(struct usrframe *f, unsigned long r);
 uint32_t usrframe_iret(struct usrframe *f);
-void usrframe_switch(void);
+void usrframe_switch();
+void usrframe_settls(struct usrframe *f, uaddr_t tls);
 
 uint64_t timer_readcounter(void);
 uint64_t timer_readperiod(void);

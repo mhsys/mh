@@ -223,9 +223,9 @@ END(_fixup_gdt)
 _C_LABEL(_set_tss):
 	push  %ebp
 	mov   %esp, %ebp
-	/* TSS (5 + 2*n) */
+	/* TSS (5 + 4*n) */
 	movl  8(%ebp), %eax
-	shl   $4, %eax
+	shl   $5, %eax
 	add $(UKERNBASE + UKERN_BGDTABLE + (5 * 8)), %eax
 	movl $0, (%eax)
 	movl $0, 4(%eax)
@@ -237,7 +237,7 @@ _C_LABEL(_set_tss):
 	movb %ch, 7(%eax)
 	orl  $0x00408900, 4(%eax)
 	mov  8(%ebp), %eax
-	shl  $1, %eax
+	shl  $2, %eax
 	add  $5, %eax
 	shl  $3, %eax
 	ltr  %ax
@@ -248,10 +248,10 @@ _C_LABEL(_set_tss):
 _C_LABEL(_set_fs):
 	push  %ebp
 	mov   %esp, %ebp
-	/* FS (5 + 2*n + 1)*/
+	/* FS (5 + 4*n + 1)*/
 	mov  8(%ebp), %ecx
 	mov  %ecx, %eax
-	shl  $4, %eax
+	shl $5, %eax
 	add $(UKERNBASE + UKERN_BGDTABLE + ((5 + 1) * 8)), %eax
 	movl $0, (%eax)
 	movl $0, 4(%eax)
@@ -263,10 +263,30 @@ _C_LABEL(_set_fs):
 	movb %ch, 7(%eax)
 	orl  $0x00409200, 4(%eax)
 	movl 8(%ebp), %eax
-	shl  $1, %eax
+	shl  $2, %eax
 	add  $(5+1), %eax
 	shl  $3, %eax
 	mov  %ax, %fs
+	pop  %ebp
+	ret
+
+	.globl _C_LABEL(_set_gs)
+_C_LABEL(_set_gs):
+	push  %ebp
+	mov   %esp, %ebp
+	/* GS (5 + 3*n + 2)*/
+	mov  8(%ebp), %eax
+	shl $2, %eax
+	add $(UKERNBASE + UKERN_BGDTABLE + ((5 + 2) * 8)), %eax
+	movl $0, (%eax)
+	movl $0, 4(%eax)
+	movw $0xff, (%eax)
+	movl 0xc(%ebp), %ecx
+	movw %cx, 2(%eax)
+	shr  $16, %ecx
+	movb %cl, 4(%eax)
+	movb %ch, 7(%eax)
+	orl  $0x0040f200, 4(%eax)
 	pop  %ebp
 	ret
 

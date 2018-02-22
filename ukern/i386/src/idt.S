@@ -45,7 +45,7 @@
 	mov %ax, %ds
 	mov %ax, %es
 	call _C_LABEL(lapic_getcurrent)
-	shl $4, %ax
+	shl $5, %ax
 	add $(6 << 3), %ax
 	mov %ax, %fs
 	xor %eax, %eax

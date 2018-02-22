@@ -432,6 +432,9 @@ static int sys_childstat(uaddr_t ucs)
 	int pid, ret;
 	struct sys_childstat cs;
 
+	if (!__chkuaddr(ucs, sizeof(struct sys_childstat)))
+		return -EFAULT;
+
 	pid = childstat(&cs);
 	ret = copy_to_user(ucs, &cs, sizeof(struct sys_childstat));
 	if (ret)
@@ -442,6 +445,13 @@ static int sys_childstat(uaddr_t ucs)
 static __dead void sys_die(int status)
 {
 	__exit(status);
+}
+
+static int sys_tls(uaddr_t start, size_t size)
+{
+	struct thread *th = current_thread();
+
+	return thtls(th, start, size);
 }
 
 static uid_t sys_getuid(int sel)
@@ -557,6 +567,8 @@ int sys_call(int sc,
 	case SYS_DIE:
 		sys_die(a1);
 		return 0;
+	case SYS_TLS:
+		return sys_tls(a1, a2);
 	case SYS_CREAT:
 		return sys_creat(a1, a2, a3);
 	case SYS_POLL:

@@ -217,8 +217,17 @@ void ___usrentry_enter(void *);
 
 void usrframe_switch(void)
 {
+
 	current_pcpu()->tss.esp0 =
 		(uint32_t) current_thread()->stack_4k + 0xff0;
+}
+
+void usrframe_settls(struct usrframe *f, uaddr_t tls)
+{
+	unsigned pcpuid = lapic_getcurrent();
+
+	_set_gs(pcpuid, tls);
+	f->gs = ((5 + pcpuid * 4 + 2) << 3) + 3;
 }
 
 void usrframe_enter(struct usrframe *f)
@@ -227,6 +236,7 @@ void usrframe_enter(struct usrframe *f)
 	current_pcpu()->tss.esp0 =
 		(uint32_t) current_thread()->stack_4k + 0xff0;
 	current_pcpu()->tss.ss0 = KDS;
+	printf("Entering frame with gs: %x\n", f->gs);
 	___usrentry_enter((void *) f);
 }
 
@@ -312,7 +322,7 @@ void usrframe_setup(struct usrframe *f, vaddr_t ip, vaddr_t sp)
 	f->ds = UDS;
 	f->es = UDS;
 	f->fs = UDS;
-	f->gs = UDS;
+	f->gs = 0;
 	f->eip = ip;
 	f->cs = UCS;
 	f->eflags = 0x202;

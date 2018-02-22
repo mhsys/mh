@@ -53,7 +53,7 @@ struct sys_childstat {
 #define SYS_CHILDSTAT 8
 #define SYS_GETPID 9
 #define SYS_RAISE 10
-
+#define SYS_TLS 11
 
 #ifndef _ASSEMBLER
 typedef enum {
