@@ -30,7 +30,6 @@
 #ifndef _i386_platform_h
 #define _i386_platform_h
 
-#include <machine/uk/apic.h>
 #include "i386.h"
 
 void platform_init(void);
