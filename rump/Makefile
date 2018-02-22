@@ -20,24 +20,20 @@ export RUMPUSER_THREADS=fiber
 .PHONY: build_rump clean_rump
 
 build_rump:
-	$(PWD)/$(EXTSDIR)/$(BUILDRUMP)/buildrump.sh -q -k \
+	$(PWD)/$(EXTSDIR)/$(BUILDRUMP)/buildrump.sh -q -k\
 	    -s $(PWD)/$(EXTSDIR)/$(BUILDRUMP)/src \
 	    -F CFLAGS='${CFLAGS} -DHOST_NOT_POSIX' \
             -F LDFLAGS='${LDFLAGS}' \
+            -T tools \
 	    -d ${INSTALLDIR}/usr \
+	    -V RUMP_KERNEL_IS_LIBC=1 -V BUILDRUMP_SYSROOT=yes		\
 	    fullbuild
 
 clean_rump:
-	rm -rf $(PWD)/obj $(PWD)/rump
+	-rm -rf $(PWD)/obj $(PWD)/rump $(PWD)/tools
 
-
-# Add this if you want rump components to be rebuilt every time you
-# clean the rest of the source code.
-#
-#CLEAN_TARGET += clean_rump
-#
+CLEAN_TARGET += clean_rump
 
 include $(MKDIR)/exts.mk
-include $(MKDIR)/lib.mk
 include $(MKDIR)/subdir.mk
 include $(MKDIR)/def.mk

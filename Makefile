@@ -1,6 +1,6 @@
 SRCROOT=.
 MKDIR=$(SRCROOT)/mk
-SUBDIRS+= include lib/libuk lib/libmrg lib sys
+SUBDIRS+= include lib/libuk lib/libmrg lib rump sys
 
 ifneq ($(TESTS)z,z)
 SUBDIRS += tests
