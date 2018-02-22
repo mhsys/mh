@@ -3,8 +3,6 @@ ALL_TARGET+= subdirs
 CLEAN_TARGET+= clean_subdirs
 INSTALL_TARGET+= install_subdirs
 
-all: subdirs 
-
 subdirs:
 	for dir in $(SUBDIRS); do (cd $$dir && $(MAKE) all) || break 0; done
 
